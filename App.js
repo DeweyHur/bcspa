@@ -1,8 +1,8 @@
 import React from 'react';
-import { MapView, Permissions, Location } from 'expo';
-import { View, Text, TextInput, Dimensions } from 'react-native';
-import { Icon, Container, Header, Button, Body, Left, Right, Title } from 'native-base';
-import styles from './styles';
+import { Location, MapView, Permissions } from 'expo';
+import { Body, Button, Container, Drawer, Header, Icon, Left, Title } from 'native-base';
+import { Dimensions, Text } from 'react-native';
+import SideBar from './SideBar';
 
 export default class extends React.Component {
   state = {
@@ -15,6 +15,13 @@ export default class extends React.Component {
     type: 'Swedish Massage',
     loading: true,
   };
+
+  constructor () {
+    super ();
+    this.closeDrawer = this.closeDrawer.bind(this);
+    this.openDrawer = this.openDrawer.bind(this);
+    this.onSideBarPress = this.onSideBarPress.bind(this);
+  }
 
   async grantLocation() {
     try {
@@ -43,8 +50,17 @@ export default class extends React.Component {
     this.setState({ ...this.state, loading: false });
   }
 
-  handleSubmit(e) {
-    alert(e.nativeEvent.text);
+  closeDrawer() {
+    this.drawer._root.close();
+  }
+
+  openDrawer() {
+    this.drawer._root.open();
+  }
+
+  onSideBarPress(type) {
+    this.setState({ ...this.state, type });
+    this.closeDrawer();
   }
 
   render() {
@@ -53,23 +69,25 @@ export default class extends React.Component {
       const { width: vw, height: vh } = Dimensions.get('window');
 
       return (
-        <Container>
-          <Header>
-            <Left>
-              <Button transparent>
-                <Icon name='menu' />
-              </Button>
-            </Left>
-            <Body>
-              <Title>
-                {type}
-              </Title>
-            </Body>
-          </Header>
-          <MapView style={{ flex: 1 }} initialRegion={coords}>
-            <MapView.Marker coordinate={coords} title="Sweet" description="Home" />
-          </MapView>
-        </Container>
+        <Drawer ref={ref => { this.drawer = ref; }} content={<SideBar onPress={this.onSideBarPress} />}  >
+          <Container>
+            <Header>
+              <Left>
+                <Button transparent onPress={this.openDrawer}>
+                  <Icon name='menu' />
+                </Button>
+              </Left>
+              <Body>
+                <Title>
+                  {type}
+                </Title>
+              </Body>
+            </Header>
+            <MapView style={{ flex: 1 }} initialRegion={coords}>
+              <MapView.Marker coordinate={coords} title="Sweet" description="Home" />
+            </MapView>
+          </Container>
+        </Drawer>
       );
       {/* <TextInput
             style={{
