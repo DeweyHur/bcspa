@@ -10,7 +10,7 @@ export default class extends React.Component {
         <Content>
           <Content>
             <Body>
-              <Thumbnail source={{ uri: 'https://www.shareicon.net/download/128x128//2015/12/04/682066_people_512x512.png' }} />
+              <Thumbnail square source={{ uri: 'https://www.shareicon.net/download/128x128//2015/12/04/682066_people_512x512.png' }} />
               <Text>Spa Map</Text>
               <Text note>© Digitz</Text>
             </Body>
