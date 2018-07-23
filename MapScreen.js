@@ -29,7 +29,7 @@ export default class extends React.Component {
       );
 
     } else {
-      const { coords, region, type, ready } = this.state;
+      const { coords, spots, region, type } = this.state;
       return (
         <View style={{ flex: 1 }}>
           <Text>{message}</Text>
@@ -39,9 +39,20 @@ export default class extends React.Component {
             provider="google"
             region={region}
             onRegionChange={(region) => this.setState({ ...this.state, message: _map(region, (value, key) => `${key}:${value}`).join(', ') })}
-            onMapLayout={() => this.setState({ ...this.state, ready: true })}
           >
+            {spots.map(spot => {
+              const { latitude, longitude, name, description, services } = spot;
+              const fullDescription = `${description}\n${services.map(({ length, price, currency }) =>
+                `${length} min - ${price}${currency}`
+              ).join('\n')}`;
 
+              return <MapView.Marker
+                key={name}
+                coordinate={{ latitude, longitude }}
+                title={name}
+                description={fullDescription}
+              />;
+            })}
 
           </MapView>
         </View>
@@ -51,25 +62,31 @@ export default class extends React.Component {
 
   componentWillMount = () => {
     (async () => {
-      let { coords } = this.state;
-      this.setState({ ...this.state, message: 'asking Permission...' });
-      await Permissions.askAsync(Permissions.LOCATION);
-      this.setState({ ...this.state, message: 'completed asking Permission...' });
-      coords = { ...coords, ...(await Location.getCurrentPositionAsync({})).coords };
+      try {
+        let { coords } = this.state;
+        this.setState({ ...this.state, message: 'asking Permission...' });
+        await Permissions.askAsync(Permissions.LOCATION);
+        this.setState({ ...this.state, message: 'completed asking Permission...' });
+        coords = { ...coords, ...(await Location.getCurrentPositionAsync({})).coords };
 
-      const uri = `${config.server}/spot/search`;
-      this.setState({ ...this.state, coords, message: `Requesting to ${uri} ...` });
-      const spots = await fetch(uri, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'Deep Tissue Massage'
-        })
-      });
-      this.setState({ ...this.state, spots, loaded: true, message: _map(spots, (value, key) => `${key}:${value}`).join(', ') });
+        const uri = `${config.server}/spot/search`;
+        this.setState({ ...this.state, coords, message: `Requesting to ${uri} ...` });
+
+        const response = await fetch(uri, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'Deep Tissue Massage'
+          })
+        });
+        const spots = await response.json();
+        this.setState({ ...this.state, spots, loaded: true, message: JSON.stringify(coords) });
+
+      } catch (e) {
+        this.setState({ ...this.state, message: e.message() });
+      }
     })();
   }
 }
