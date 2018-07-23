@@ -1,8 +1,9 @@
 import React from 'react';
-import { map as _map } from 'lodash';
+import { map as _map, get as _get } from 'lodash';
 import { Location, MapView, Permissions, AppLoading } from 'expo';
-import { Dimensions, Text, View, Request } from 'react-native';
+import { Dimensions, Text, View, Request, Picker } from 'react-native';
 import { StackNavigator } from 'react-navigation';
+import { Dropdown } from 'react-native-material-dropdown';
 import config from './config/local.js';
 
 export default class extends React.Component {
@@ -16,6 +17,11 @@ export default class extends React.Component {
     type: 'Deep Tissue Massage',
     message: 'Initializing...'
   };
+
+  static navigationOptions = ({ navigation }) => {
+    const title = _get(navigation, 'state.params.title') || 'Nothing';
+    return { title };
+  }
 
   render = () => {
     const { loaded, message } = this.state;
@@ -33,6 +39,18 @@ export default class extends React.Component {
       return (
         <View style={{ flex: 1 }}>
           <Text>{message}</Text>
+          {/* <Picker
+            selectedValue={type}
+            onValueChange={type => this.setState({ ...this.state, type, message: `Type changed to ${type}` })}
+          >
+            <Picker.Item label="Deep Tissue Massage" value="Deep Tissue Massage" />
+            <Picker.Item label="Shiatsu" value="Shiatsu" />
+          </Picker> */}
+          <Dropdown 
+            label="Service Type" 
+            data={['Deep Tissue Massage', 'Shiatsu'].map(value => ({ value }))} 
+            onChangeText={type => (async () => await this.changeType(type))()}
+          />
           <MapView
             style={{ flex: 1, zIndex: -1 }}
             initialRegion={coords}
@@ -42,9 +60,9 @@ export default class extends React.Component {
           >
             {spots.map(spot => {
               const { latitude, longitude, name, description, services } = spot;
-              const fullDescription = `${description}\n${services.map(({ length, price, currency }) =>
-                `${length} min - ${price}${currency}`
-              ).join('\n')}`;
+              const fullDescription = `${description}: ${services.map(({ length, price, currency }) =>
+                `${length}min - ${price}${currency}`
+              ).join(', ')}`;
 
               return <MapView.Marker
                 key={name}
@@ -60,29 +78,40 @@ export default class extends React.Component {
     }
   }
 
+  changeType = async (type) => {
+    try {
+      const uri = `${config.server}/spot/search`;
+      this.setState({ ...this.state, message: `Requesting to ${uri} ...` });
+
+      const response = await fetch(uri, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type })
+      });
+      const spots = await response.json();
+      this.setState({ ...this.state, spots, loaded: true, message: JSON.stringify(spots) });
+
+      const { setParams } = this.props.navigation;
+      setParams({ title: type });  
+    
+    } catch (e) {
+      this.setState({ ...this.state, message: e.message() });
+    }
+  }
+
   componentWillMount = () => {
     (async () => {
       try {
-        let { coords } = this.state;
+        const { coords, type } = this.state;
+
         this.setState({ ...this.state, message: 'asking Permission...' });
         await Permissions.askAsync(Permissions.LOCATION);
         this.setState({ ...this.state, message: 'completed asking Permission...' });
         coords = { ...coords, ...(await Location.getCurrentPositionAsync({})).coords };
 
-        const uri = `${config.server}/spot/search`;
-        this.setState({ ...this.state, coords, message: `Requesting to ${uri} ...` });
-
-        const response = await fetch(uri, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            type: 'Deep Tissue Massage'
-          })
-        });
-        const spots = await response.json();
-        this.setState({ ...this.state, spots, loaded: true, message: JSON.stringify(coords) });
+        await this.changeType(type);
 
       } catch (e) {
         this.setState({ ...this.state, message: e.message() });
