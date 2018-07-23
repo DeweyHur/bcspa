@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "tabs-with-icons",
+    "name": "spa-seeker",
     "description": "No description",
     "slug": "snack-r1Pk-j56G",
     "privacy": "unlisted",
-    "sdkVersion": "27.0.0",
+    "sdkVersion": "28.0.0",
     "version": "1.0.0",
     "orientation": "portrait",
     "primaryColor": "#cccccc",

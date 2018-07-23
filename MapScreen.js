@@ -1,9 +1,9 @@
 import React from 'react';
-import { Location, MapView, Permissions } from 'expo';
-import { Body, Button, Container, Drawer, Header, Icon, Left, Right, Title } from 'native-base';
-import { Dimensions, Text } from 'react-native';
+import { map as _map } from 'lodash';
+import { Location, MapView, Permissions, AppLoading } from 'expo';
+import { Dimensions, Text, View, Request } from 'react-native';
 import { StackNavigator } from 'react-navigation';
-import SideBar from './SideBar';
+import config from './config/local.js';
 
 export default class extends React.Component {
   state = {
@@ -13,77 +13,63 @@ export default class extends React.Component {
       latitudeDelta: 0.0922,
       longitudeDelta: 0.0421,
     },
-    type: 'Swedish Massage',
-    loading: true
+    type: 'Deep Tissue Massage',
+    message: 'Initializing...'
   };
 
-  constructor() {
-    super();
-    this.closeDrawer = this.closeDrawer.bind(this);
-    this.openDrawer = this.openDrawer.bind(this);
-    this.onSideBarPress = this.onSideBarPress.bind(this);
-  }
+  render = () => {
+    const { loaded, message } = this.state;
+    // const { width: vw, height: vh } = Dimensions.get('window');
 
-  async componentWillMount() {
-    await Expo.Font.loadAsync({
-      'Roboto': require('native-base/Fonts/Roboto.ttf'),
-      'Roboto_medium': require('native-base/Fonts/Roboto_medium.ttf'),
-      'Ionicons': require('native-base/Fonts/Ionicons.ttf'),
-    });
-    await Permissions.askAsync(Permissions.LOCATION);
-    const { coords } = await Location.getCurrentPositionAsync({});
-    this.setState({ ...this.state, coords, loading: false });
-  }
-
-  closeDrawer() {
-    this.drawer._root.close();
-  }
-
-  openDrawer() {
-    this.drawer._root.open();
-  }
-
-  onSideBarPress(type) {
-    this.setState({ ...this.state, type });
-    this.closeDrawer();
-  }
-
-  render() {
-    const { loading, coords, type } = this.state;
-    const { width: vw, height: vh } = Dimensions.get('window');
-
-    if (loading) {
+    if (!loaded) {
       return (
-        <Expo.Loading />
+        <View style={{ flex: 1 }}>
+          <Text>{message}</Text>
+        </View>
       );
 
     } else {
+      const { coords, region, type, ready } = this.state;
       return (
-        <Drawer ref={ref => { this.drawer = ref; }} content={<SideBar onPress={this.onSideBarPress} />}  >
-          <Container>
-            <Header>
-              <Left>
-                <Button transparent onPress={this.openDrawer}>
-                  <Icon name='menu' />
-                </Button>
-              </Left>
-              <Body>
-                <Title>
-                  {type}
-                </Title>
-              </Body>
-              <Right>
-                <Button transparent onPress={this.openDrawer}>
-                  <Icon name='help' />
-                </Button>
-              </Right>
-            </Header>
-            <MapView style={{ flex: 1 }} initialRegion={coords}>
-              <MapView.Marker coordinate={coords} title="Sweet" description="Home" />
-            </MapView>
-          </Container>
-        </Drawer>
+        <View style={{ flex: 1 }}>
+          <Text>{message}</Text>
+          <MapView
+            style={{ flex: 1, zIndex: -1 }}
+            initialRegion={coords}
+            provider="google"
+            region={region}
+            onRegionChange={(region) => this.setState({ ...this.state, message: _map(region, (value, key) => `${key}:${value}`).join(', ') })}
+            onMapLayout={() => this.setState({ ...this.state, ready: true })}
+          >
+
+
+          </MapView>
+        </View>
       );
     }
+  }
+
+  componentWillMount = () => {
+    (async () => {
+      let { coords } = this.state;
+      this.setState({ ...this.state, message: 'asking Permission...' });
+      await Permissions.askAsync(Permissions.LOCATION);
+      this.setState({ ...this.state, message: 'completed asking Permission...' });
+      coords = { ...coords, ...(await Location.getCurrentPositionAsync({})).coords };
+
+      const uri = `${config.server}/spot/search`;
+      this.setState({ ...this.state, coords, message: `Requesting to ${uri} ...` });
+      const spots = await fetch(uri, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'Deep Tissue Massage'
+        })
+      });
+      this.setState({ ...this.state, spots, loaded: true, message: _map(spots, (value, key) => `${key}:${value}`).join(', ') });
+    })();
   }
 }
