@@ -18,10 +18,12 @@ export default class extends React.Component {
     message: 'Initializing...'
   };
 
-  static navigationOptions = ({ navigation }) => {
-    const title = _get(navigation, 'state.params.title') || 'Nothing';
-    return { title };
-  }
+  // static navigationOptions = ({ navigation }) => {
+  //   const title = _get(navigation, 'state.params.title') || 'Nothing';
+  //   return { title };
+  // }
+
+  static navigationOptions = { title: 'SPA Seeker' };
 
   render = () => {
     const { loaded, message } = this.state;
@@ -38,16 +40,9 @@ export default class extends React.Component {
       const { coords, spots, region, type } = this.state;
       return (
         <View style={{ flex: 1 }}>
-          <Text>{message}</Text>
-          {/* <Picker
-            selectedValue={type}
-            onValueChange={type => this.setState({ ...this.state, type, message: `Type changed to ${type}` })}
-          >
-            <Picker.Item label="Deep Tissue Massage" value="Deep Tissue Massage" />
-            <Picker.Item label="Shiatsu" value="Shiatsu" />
-          </Picker> */}
           <Dropdown 
-            label="Service Type" 
+            label="Service Type"
+            value={type}
             data={['Deep Tissue Massage', 'Shiatsu'].map(value => ({ value }))} 
             onChangeText={type => (async () => await this.changeType(type))()}
           />
@@ -71,8 +66,8 @@ export default class extends React.Component {
                 description={fullDescription}
               />;
             })}
-
           </MapView>
+          <Text>{message}</Text>
         </View>
       );
     }
@@ -93,8 +88,8 @@ export default class extends React.Component {
       const spots = await response.json();
       this.setState({ ...this.state, spots, loaded: true, message: JSON.stringify(spots) });
 
-      const { setParams } = this.props.navigation;
-      setParams({ title: type });  
+      // const { setParams } = this.props.navigation;
+      // setParams({ title: type });  
     
     } catch (e) {
       this.setState({ ...this.state, message: e.message() });
