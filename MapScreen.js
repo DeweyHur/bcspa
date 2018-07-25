@@ -4,6 +4,7 @@ import { Location, MapView, Permissions, AppLoading } from 'expo';
 import { Dimensions, Text, View, Request, Picker } from 'react-native';
 import { StackNavigator } from 'react-navigation';
 import { Dropdown } from 'react-native-material-dropdown';
+import PopupDialog, { DialogTitle } from 'react-native-popup-dialog';
 import config from './config/local.js';
 
 export default class extends React.Component {
@@ -37,13 +38,13 @@ export default class extends React.Component {
       );
 
     } else {
-      const { coords, spots, region, type } = this.state;
+      const { coords, spots, region, type, selected } = this.state;
       return (
         <View style={{ flex: 1 }}>
-          <Dropdown 
+          <Dropdown
             label="Service Type"
             value={type}
-            data={['Deep Tissue Massage', 'Shiatsu'].map(value => ({ value }))} 
+            data={['Deep Tissue Massage', 'Shiatsu'].map(value => ({ value }))}
             onChangeText={type => (async () => await this.changeType(type))()}
           />
           <MapView
@@ -54,23 +55,40 @@ export default class extends React.Component {
             onRegionChange={(region) => this.setState({ ...this.state, message: _map(region, (value, key) => `${key}:${value}`).join(', ') })}
           >
             {spots.map(spot => {
-              const { latitude, longitude, name, description, services } = spot;
-              const fullDescription = `${description}: ${services.map(({ length, price, currency }) =>
-                `${length}min - ${price}${currency}`
-              ).join(', ')}`;
-
               return <MapView.Marker
-                key={name}
-                coordinate={{ latitude, longitude }}
-                title={name}
-                description={fullDescription}
+                key={spot.name}
+                coordinate={spot}
+                title={spot.name}
+                description={this.generateDescription(spot)}
+                onCalloutPress={() => {
+                  this.popupDialog.show();
+                  this.setState({ ...this.state, selected: spot });
+                }}
               />;
             })}
           </MapView>
+          <PopupDialog
+            ref={popupDialog => { this.popupDialog = popupDialog; }}
+            onDismissed={() => this.setState({ ...this.state, selected: undefined })}
+          >
+            {selected != null &&
+              <View>
+                <Text>{selected.name}</Text>
+                <Text>{this.generateDescription(selected)}</Text>
+              </View>
+            }
+          </PopupDialog>
           <Text>{message}</Text>
         </View>
       );
     }
+  }
+
+  generateDescription = (spot) => {
+    const { name, description, services } = spot;
+    return `${description}: ${services.map(({ length, price, currency }) =>
+      `${length}min - ${price}${currency}`
+    ).join(', ')}`;
   }
 
   changeType = async (type) => {
@@ -90,7 +108,7 @@ export default class extends React.Component {
 
       // const { setParams } = this.props.navigation;
       // setParams({ title: type });  
-    
+
     } catch (e) {
       this.setState({ ...this.state, message: e.message() });
     }
