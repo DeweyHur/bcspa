@@ -1,4 +1,5 @@
 /node_modules
 .expo/settings.json
 .expo/packager-info.json
-config/local.js
+local.js
+.DS_Store

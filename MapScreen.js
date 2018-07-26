@@ -1,10 +1,12 @@
 import React from 'react';
 import { map as _map, get as _get } from 'lodash';
-import { Location, MapView, Permissions, AppLoading } from 'expo';
+import { Location, Permissions, AppLoading } from 'expo';
 import { Dimensions, Text, View, Request, Picker } from 'react-native';
+import { Marker, Callout } from 'react-native-maps';
 import { StackNavigator } from 'react-navigation';
 import { Dropdown } from 'react-native-material-dropdown';
 import PopupDialog, { DialogTitle } from 'react-native-popup-dialog';
+import DetailClusteredMapView from './DetailClusteredMapView';
 import config from './config/local.js';
 
 export default class extends React.Component {
@@ -26,9 +28,40 @@ export default class extends React.Component {
 
   static navigationOptions = { title: 'SPA Seeker' };
 
+  renderCluster(cluster, onPress) {
+    const { properties: { cluster_id }, geometry: { coordinates: [ longitude, latitude ] } } = cluster;
+    const points = this.map.getClusteringEngine().getLeaves(cluster_id);
+    const selected = points.map(x => _get(x, 'properties.item'));
+
+    return (
+      <Marker coordinate={{ latitude, longitude }} onPress={() => {
+        this.popupDialog.show();
+        this.setState({ ...this.state, selected });
+      }}>
+        <View style={{ backgroundColor: 'white', padding: 20, borderRadius: 20 }}>
+          <Text>{selected.length}</Text>
+        </View>
+      // </Marker>
+    );
+  }
+
+  renderMarker = spot =>
+    <Marker
+      key={spot.name}
+      coordinate={spot}
+      onPress={() => {
+        this.setState({ ...this.state, selected: [spot] });
+        this.popupDialog.show();
+      }}
+    >
+      <View style={{ backgroundColor: 'white', padding: 20, borderRadius: 20 }}>
+        <Text>1</Text>
+      </View>
+    </Marker>
+
   render = () => {
     const { loaded, message } = this.state;
-    // const { width: vw, height: vh } = Dimensions.get('window');
+    const { width: vw, height: vh } = Dimensions.get('window');
 
     if (!loaded) {
       return (
@@ -47,34 +80,28 @@ export default class extends React.Component {
             data={['Deep Tissue Massage', 'Shiatsu'].map(value => ({ value }))}
             onChangeText={type => (async () => await this.changeType(type))()}
           />
-          <MapView
+          <DetailClusteredMapView
+            ref={ref => this.map = ref}
             style={{ flex: 1, zIndex: -1 }}
             initialRegion={coords}
             provider="google"
+            data={spots}
+            renderMarker={this.renderMarker}
+            renderCluster={this.renderCluster.bind(this)}
             region={region}
-            onRegionChange={(region) => this.setState({ ...this.state, message: _map(region, (value, key) => `${key}:${value}`).join(', ') })}
-          >
-            {spots.map(spot => {
-              return <MapView.Marker
-                key={spot.name}
-                coordinate={spot}
-                title={spot.name}
-                description={this.generateDescription(spot)}
-                onCalloutPress={() => {
-                  this.popupDialog.show();
-                  this.setState({ ...this.state, selected: spot });
-                }}
-              />;
-            })}
-          </MapView>
+          />
           <PopupDialog
             ref={popupDialog => { this.popupDialog = popupDialog; }}
             onDismissed={() => this.setState({ ...this.state, selected: undefined })}
           >
-            {selected != null &&
+            {selected != null && 
               <View>
-                <Text>{selected.name}</Text>
-                <Text>{this.generateDescription(selected)}</Text>
+                { selected.map(spot => 
+                  <View key={spot.name} style={{ padding: 5, borderWidth: 1 }}>
+                    <Text>{spot.name}</Text>
+                    <Text>{this.generateDescription(spot)}</Text>
+                  </View>
+                ) }
               </View>
             }
           </PopupDialog>
@@ -103,7 +130,11 @@ export default class extends React.Component {
         },
         body: JSON.stringify({ type })
       });
-      const spots = await response.json();
+      const json = await response.json();
+      const spots = json.map(spot => {
+        const { latitude, longitude } = spot;
+        return { ...spot, latitude: latitude / 100, longitude: longitude / 100 };
+      });
       this.setState({ ...this.state, spots, loaded: true, message: JSON.stringify(spots) });
 
       // const { setParams } = this.props.navigation;
