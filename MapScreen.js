@@ -6,7 +6,7 @@ import { Marker, Callout } from 'react-native-maps';
 import { StackNavigator } from 'react-navigation';
 import { Dropdown } from 'react-native-material-dropdown';
 import PopupDialog, { DialogTitle } from 'react-native-popup-dialog';
-import DetailClusteredMapView from './DetailClusteredMapView';
+import ClusteredMapView from 'react-native-maps-super-cluster';
 import config from './config/local.js';
 
 export default class extends React.Component {
@@ -28,18 +28,17 @@ export default class extends React.Component {
 
   static navigationOptions = { title: 'SPA Seeker' };
 
-  renderCluster(cluster, onPress) {
-    const { properties: { cluster_id }, geometry: { coordinates: [ longitude, latitude ] } } = cluster;
-    const points = this.map.getClusteringEngine().getLeaves(cluster_id);
+  renderCluster({ pointCount, coordinate, clusterId }, onPress) {
+    const points = this.map.getClusteringEngine().getLeaves(clusterId);
     const selected = points.map(x => _get(x, 'properties.item'));
 
     return (
-      <Marker coordinate={{ latitude, longitude }} onPress={() => {
+      <Marker coordinate={coordinate} onPress={() => {
         this.popupDialog.show();
         this.setState({ ...this.state, selected });
       }}>
         <View style={{ backgroundColor: 'white', padding: 20, borderRadius: 20 }}>
-          <Text>{selected.length}</Text>
+          <Text>{pointCount}</Text>
         </View>
       // </Marker>
     );
@@ -59,7 +58,12 @@ export default class extends React.Component {
       </View>
     </Marker>
 
-  render = () => {
+  convertData = (data) => {
+    const { latitude, longitude } = data;
+    return { ...data, location: { latitude, longitude }};
+  }
+
+  render() {
     const { loaded, message } = this.state;
     const { width: vw, height: vh } = Dimensions.get('window');
 
@@ -80,12 +84,12 @@ export default class extends React.Component {
             data={['Deep Tissue Massage', 'Shiatsu'].map(value => ({ value }))}
             onChangeText={type => (async () => await this.changeType(type))()}
           />
-          <DetailClusteredMapView
+          <ClusteredMapView
             ref={ref => this.map = ref}
             style={{ flex: 1, zIndex: -1 }}
             initialRegion={coords}
             provider="google"
-            data={spots}
+            data={spots.map(this.convertData)}
             renderMarker={this.renderMarker}
             renderCluster={this.renderCluster.bind(this)}
             region={region}
@@ -130,11 +134,7 @@ export default class extends React.Component {
         },
         body: JSON.stringify({ type })
       });
-      const json = await response.json();
-      const spots = json.map(spot => {
-        const { latitude, longitude } = spot;
-        return { ...spot, latitude: latitude / 100, longitude: longitude / 100 };
-      });
+      const spots = await response.json();
       this.setState({ ...this.state, spots, loaded: true, message: JSON.stringify(spots) });
 
       // const { setParams } = this.props.navigation;

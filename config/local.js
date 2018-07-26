@@ -1,3 +1,3 @@
 export default {
-  "server": "http://localhost:14141"
+  "server": "https://spaseeker.herokuapp.com"
 };
