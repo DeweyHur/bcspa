@@ -1,8 +1,8 @@
 {
   "expoServerPort": 19000,
   "packagerPort": 19001,
-  "packagerPid": 50024,
-  "expoServerNgrokUrl": null,
-  "packagerNgrokUrl": null,
-  "ngrokPid": null
+  "packagerPid": 9513,
+  "expoServerNgrokUrl": "https://bm-bb5.digitz.bcspa.exp.direct",
+  "packagerNgrokUrl": "https://packager.bm-bb5.digitz.bcspa.exp.direct",
+  "ngrokPid": 9540
 }
