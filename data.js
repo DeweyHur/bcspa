@@ -1,0 +1,1 @@
+export const MassageType = ['Deep Tissue', 'Head Neck', 'Shiatsu', 'Foot', 'Swedish'];

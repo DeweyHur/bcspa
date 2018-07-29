@@ -1,7 +1,7 @@
 {
-  "name": "choose-your-bodyworker",
+  "name": "my-dear-bodyworker",
   "version": "0.0.0",
-  "description": "No description",
+  "description": "Find your best local bodyworker!",
   "author": "Dewey Hur",
   "private": true,
   "main": "node_modules/expo/AppEntry.js",
@@ -13,6 +13,7 @@
     "react-native-maps-super-cluster": "^1.4.1",
     "react-native-material-dropdown": "^0.11.1",
     "react-native-popup-dialog": "^0.14.52",
+    "react-native-render-html": "^3.10.0",
     "react-navigation": "2.9.0"
   },
   "devDependencies": {

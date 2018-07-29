@@ -1,12 +1,13 @@
 import React from 'react';
 import { map as _map, get as _get } from 'lodash';
 import { Location, Permissions, AppLoading } from 'expo';
-import { Dimensions, Text, View, Request, Picker } from 'react-native';
+import { Button, Dimensions, Text, View, Request, Picker, ScrollView } from 'react-native';
 import { Marker, Callout } from 'react-native-maps';
 import { Dropdown } from 'react-native-material-dropdown';
 import PopupDialog, { DialogTitle } from 'react-native-popup-dialog';
 import ClusteredMapView from 'react-native-maps-super-cluster';
 import { searchSpot } from './query';
+import { MassageType } from './data';
 
 export default class extends React.Component {
 
@@ -17,7 +18,7 @@ export default class extends React.Component {
   //   return { title };
   // }
 
-  static navigationOptions = { title: 'Your Bodywork' };
+  static navigationOptions = { title: 'My Dear Bodyworker' };
 
   renderCluster({ pointCount, coordinate, clusterId }, onPress) {
     const points = this.map.getClusteringEngine().getLeaves(clusterId);
@@ -51,20 +52,20 @@ export default class extends React.Component {
 
   convertData = (data) => {
     const { latitude, longitude } = data;
-    return { ...data, location: { latitude, longitude }};
+    return { ...data, location: { latitude, longitude } };
   }
 
   render() {
     const { width: vw, height: vh } = Dimensions.get('window');
-
     const { type, coords, spots, message, region, selected } = { ...this.props.navigation.state.params, ...this.state };
+    const { navigation } = this.props;
 
     return (
       <View style={{ flex: 1 }}>
         <Dropdown
           label="Service Type"
           value={type}
-          data={['Deep Tissue Massage', 'Shiatsu'].map(value => ({ value }))}
+          data={MassageType.map(value => ({ value }))}
           onChangeText={type => (async () => await this.changeType(type))()}
         />
         <ClusteredMapView
@@ -81,15 +82,16 @@ export default class extends React.Component {
           ref={popupDialog => { this.popupDialog = popupDialog; }}
           onDismissed={() => this.setState({ ...this.state, selected: undefined })}
         >
-          {selected != null && 
-            <View>
-              { selected.map(spot => 
-                <View key={spot.name} style={{ padding: 5, borderWidth: 1 }}>
-                  <Text>{spot.name}</Text>
-                  <Text>{this.generateDescription(spot)}</Text>
-                </View>
-              ) }
-            </View>
+          {selected != null &&
+            <ScrollView>
+              {selected.map(spot =>
+                <Button
+                  key={spot.name}
+                  title={`${spot.name}\n${this.generateDescription(spot)}`}
+                  onPress={() => navigation.navigate('Detail', spot)}
+                />
+              )}
+            </ScrollView>
           }
           {selected == null && <View />}
         </PopupDialog>
