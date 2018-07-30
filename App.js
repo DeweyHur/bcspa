@@ -2,9 +2,12 @@ import React from 'react';
 import Navigator, { createStackNavigator } from 'react-navigation';
 import { Dimensions, View, Text, Image } from 'react-native';
 import { Location, Permissions } from 'expo';
-import { searchSpot } from './query';
+import Roboto from 'native-base/Fonts/Roboto.ttf';
+import Roboto_medium from 'native-base/Fonts/Roboto_medium.ttf';
+import Ionicons from 'native-base/Fonts/Ionicons.ttf';
 import MapScreen from './MapScreen';
 import DetailScreen from './DetailScreen';
+import SelectServiceScreen from './SelectServiceScreen';
 import { MassageType } from './data';
 
 global.__old_console_warn = global.__old_console_warn || console.warn;
@@ -31,9 +34,9 @@ export default class extends React.Component {
         await Permissions.askAsync(Permissions.LOCATION);
         this.setState({ ...this.state, message: 'getting current location...' });
         coords = (await Location.getCurrentPositionAsync({})).coords;
-        this.setState({ ...this.state, message: 'querying spots...' });
-        spots = await searchSpot(type);
-        this.setState({ ...this.state, spots, ready: true, message: 'Done' });
+        this.setState({ ...this.state, coords, message: 'Loading fonts...' });
+        await Expo.Font.loadAsync({ Roboto, Roboto_medium, Ionicons });
+        this.setState({ ...this.state, ready: true, message: 'Done' });
 
       } catch (e) {
         this.setState({ ...this.state, message: e.message() });
@@ -48,20 +51,19 @@ export default class extends React.Component {
     if (ready) {
       this.navigator = this.navigator || createStackNavigator(
         {
+          SelectService: SelectServiceScreen,
           Map: MapScreen,
           Detail: DetailScreen
         },
         {
-          initialRouteName: "Map",
+          initialRouteName: "SelectService",
           initialRouteParams: {
             coords: { 
               latitude: 49.2641022,
               longitude: -122.9505321,
               latitudeDelta: 0.0922,
               longitudeDelta: 0.0421,
-            },
-            spots,
-            type
+            }
           }
         }
       );

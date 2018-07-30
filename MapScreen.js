@@ -1,7 +1,7 @@
 import React from 'react';
 import { map as _map, get as _get } from 'lodash';
-import { Location, Permissions, AppLoading } from 'expo';
-import { Button, Dimensions, Text, View, Request, Picker, ScrollView } from 'react-native';
+import { Dimensions, Text, View, Request, Picker, ScrollView, FlatList, TouchableOpacity } from 'react-native';
+import { Icon, Container, Header, Left, Body, Right, Button as BaseButton, Text as BaseText, Icon as BaseIcon, Title } from 'native-base';
 import { Marker, Callout } from 'react-native-maps';
 import { Dropdown } from 'react-native-material-dropdown';
 import PopupDialog, { DialogTitle } from 'react-native-popup-dialog';
@@ -13,12 +13,7 @@ export default class extends React.Component {
 
   state = {}
 
-  // static navigationOptions = ({ navigation }) => {
-  //   const title = _get(navigation, 'state.params.title') || 'Nothing';
-  //   return { title };
-  // }
-
-  static navigationOptions = { title: 'My Dear Bodyworker' };
+  static navigationOptions = { header: null }
 
   renderCluster({ pointCount, coordinate, clusterId }, onPress) {
     const points = this.map.getClusteringEngine().getLeaves(clusterId);
@@ -61,7 +56,18 @@ export default class extends React.Component {
     const { navigation } = this.props;
 
     return (
-      <View style={{ flex: 1 }}>
+      <Container>
+        <Header>
+          <Left>
+            <Icon name='arrow-round-back' onPress={() => navigation.goBack()} />
+          </Left>
+          <Body>
+            <Title>{type}</Title>
+          </Body>
+          <Right>
+            <Icon name='options' />
+          </Right>
+        </Header>
         <Dropdown
           label="Service Type"
           value={type}
@@ -82,28 +88,29 @@ export default class extends React.Component {
           ref={popupDialog => { this.popupDialog = popupDialog; }}
           onDismissed={() => this.setState({ ...this.state, selected: undefined })}
         >
-          {selected != null &&
-            <ScrollView>
-              {selected.map(spot =>
-                <Button
-                  key={spot.name}
-                  title={`${spot.name}\n${this.generateDescription(spot)}`}
-                  onPress={() => navigation.navigate('Detail', spot)}
-                />
-              )}
-            </ScrollView>
-          }
-          {selected == null && <View />}
+          <FlatList
+            data={selected || []}
+            renderItem={({ item }) =>
+              <TouchableOpacity
+                key={item.name}
+                onPress={() => navigation.navigate('Detail', item)}
+                style={{ padding: 5, borderWidth: 1, borderRadius: 3 }}
+              >
+                <Text key="name" style={{ fontWeight: 'bold' }}>{item.name}</Text>
+                <Text key="description">{item.description}</Text>
+                <Text key="services">{this.generateDescription(item)}</Text>
+              </TouchableOpacity>
+            }
+          />
         </PopupDialog>
         <Text>{message}</Text>
-      </View>
+      </Container>
     );
   }
 
-  generateDescription = (spot) => {
-    const { name, description, services } = spot;
-    return `${description}: ${services.map(({ length, price, currency }) =>
-      `${length}min - ${price}${currency}`
+  generateDescription = ({ services }) => {
+    return `${services.map(({ length, price, currency }) =>
+      `${price}${currency}(${length}min)`
     ).join(', ')}`;
   }
 

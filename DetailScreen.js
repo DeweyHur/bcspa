@@ -1,34 +1,37 @@
 import React from 'react';
 import { get as _get } from 'lodash';
-import { ScrollView, Text } from 'react-native';
-import HTML from 'react-native-render-html';
+import { Container, Header, Left, Icon, Title, Content, Tabs, Tab, Body, Right } from 'native-base';
+import { NavigationActions } from 'react-navigation';
+import DetailInfoTab from './DetailInfoTab';
+import DetailServicesTab from './DetailServicesTab';
 
 export default class extends React.Component {
   state = {}
 
-  static navigationOptions = ({ navigation }) => {
-    const title = _get(navigation, 'state.params.name') || 'Unknown';
-    return { title };
-  }
-
+  static navigationOptions = { header: null }
+  
   render() {
-    const { name, description, services } = this.props.navigation.state.params;
-    const html = `
-      <p>
-        ${description}
-      </p>
-      <ul>
-        ${services.map(({ length, price, currency }) => {
-          return `<li>${length} min - ${currency} ${price}</li>`;
-        }).join('')}
-      </ul>
-    `;
+    const { goBack, state: { params: { name, description, services } } } = this.props.navigation;
     return (
-      <ScrollView>
-        <HTML
-          html={html}
-        />
-      </ScrollView>
+      <Container>
+        <Header>
+          <Left>
+            <Icon name='arrow-round-back' onPress={() => goBack()} />
+          </Left>
+          <Body>
+            <Title>{name}</Title>
+          </Body>
+          <Right />
+        </Header>
+        <Tabs>
+          <Tab heading="INFO">
+            <DetailInfoTab description={description} />
+          </Tab>
+          <Tab heading="SERVICES">
+            <DetailServicesTab services={services} />
+          </Tab>
+        </Tabs>
+      </Container>
     );
   }
 }
